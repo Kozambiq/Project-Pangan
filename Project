@@ -1,0 +1,261 @@
+package ridehailingsystem;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.text.DecimalFormat;
+import java.util.concurrent.atomic.AtomicInteger;
+
+
+public class RideHailingSystem {
+
+    
+    private static final double INITIAL_KM_COST = 25.00; 
+    private static final double ADDITIONAL_KM_RATE = 20.00; 
+
+    
+    private static List<Booking> bookings = new ArrayList<>();
+ 
+    private static AtomicInteger nextId = new AtomicInteger(1);
+
+   
+    private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00");
+    private static final DecimalFormat DISTANCE_FORMAT = new DecimalFormat("0.0");
+
+   
+    record Booking(
+        int id,
+        String date,
+        String time,
+        String passengerName,
+        String pickupLocation,
+        String dropoffLocation,
+        double distance,
+        double fare
+    ) {}
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        
+        addSampleBookings();
+
+       
+        while (true) {
+            displayMenu();
+            String choice = scanner.nextLine().trim().toLowerCase();
+
+            System.out.println();
+
+            switch (choice) {
+                case "a":
+                    viewAllBookings();
+                    break;
+                case "b":
+                    bookRide(scanner);
+                    break;
+                case "c":
+                    deleteBooking(scanner);
+                    break;
+                case "d":
+                    generateReport();
+                    break;
+                case "e":
+                    System.out.println("Thank you for using the RIDE-HAILING BOOKING SYSTEM. Goodbye!");
+                    scanner.close();
+                    return; 
+                default:
+                    System.out.println("Invalid choice. Please select an option from 'a' to 'e'.");
+            }
+            
+            System.out.println("\nPress ENTER to return to the main menu...");
+            try { scanner.nextLine(); } catch (Exception e) {}
+        }
+    }
+
+    
+    private static void addSampleBookings() {
+        
+        bookings.add(new Booking(
+            nextId.getAndIncrement(),
+            "9/10/2024", "10:00 AM", "Benken",
+            "Baliwag", "Boss R", 10.0, calculateFare(10.0) 
+        ));
+        bookings.add(new Booking(
+            nextId.getAndIncrement(),
+            "9/12/2024", "11:00 AM", "NeBnek",
+            "Pulonggubat Baliwag", "Park", 4.8, calculateFare(4.8) 
+        ));
+        bookings.add(new Booking(
+            nextId.getAndIncrement(),
+            "9/14/2024", "9:00 AM", "Neburnek",
+            "Boss R", "Sogo Baliwag", 9.1, calculateFare(9.1) 
+        ));
+    }
+
+    
+    private static void displayMenu() {
+        System.out.println("\n");
+        System.out.println("RIDE-HAILING BOOKING SYSTEM - MENU");
+        System.out.println("");
+        System.out.println("a. View All Bookings");
+        System.out.println("b. Book a Ride");
+        System.out.println("c. Delete a Booking");
+        System.out.println("d. Generate Booking Report");
+        System.out.println("e. Exit Application");
+        System.out.println("");
+        System.out.print("Enter your choice (a-e): ");
+    }
+
+    
+    private static double calculateFare(double distance) {
+        if (distance <= 0) {
+            return 0.0;
+        } else if (distance <= 1.0) {
+           
+            return INITIAL_KM_COST;
+        } else {
+           
+            double additionalDistance = distance - 1.0;
+            return INITIAL_KM_COST + (ADDITIONAL_KM_RATE * additionalDistance);
+        }
+    }
+
+    
+    private static void viewAllBookings() {
+        System.out.println("VIEW ALL BOOKINGS");
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+
+        
+        
+        System.out.printf("#", "Date", "Time", "Passenger Name", "Pick-up Location", "Drop-off Location", "Distance (km)", "Fare (PHP)");
+        
+
+        
+        for (Booking b : bookings) {
+            System.out.printf( b.id(),b.date(), b.time(),b.passengerName(), b.pickupLocation(), b.dropoffLocation(), DISTANCE_FORMAT.format(b.distance()),CURRENCY_FORMAT.format(b.fare())
+            );
+        }
+       
+    }
+
+        private static void bookRide(Scanner scanner) {
+        System.out.println("BOOK A RIDE");
+
+        System.out.print("a. Enter Passenger Name: ");
+        String name = scanner.nextLine();
+
+        System.out.print("b. Enter Date (e.g., MM/DD/YYYY): ");
+        String date = scanner.nextLine();
+
+        System.out.print("c. Enter Time (e.g., HH:MM AM/PM): ");
+        String time = scanner.nextLine();
+
+        System.out.print("d. Enter Pickup Location: ");
+        String pickup = scanner.nextLine();
+
+        System.out.print("e. Enter Dropoff Location: ");
+        String dropoff = scanner.nextLine();
+
+        double distance = -1;
+        while (distance < 0) {
+            System.out.print("f. Enter Distance (km) (e.g., 5.5): ");
+            try {
+               
+                distance = Double.parseDouble(scanner.nextLine());
+                if (distance < 0) {
+                    System.out.println("Distance cannot be negative. Please try again.");
+                    distance = -1;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid distance format. Please enter a valid number.");
+            }
+        }
+
+        
+        double fare = calculateFare(distance);
+        Booking newBooking = new Booking(
+            nextId.getAndIncrement(), date, time, name, pickup, dropoff, distance, fare
+        );
+
+        bookings.add(newBooking);
+
+        System.out.println("\n");
+        System.out.println("SUCCESS! Ride booked.");
+        System.out.println("Booking ID: " + newBooking.id());
+        System.out.println("Distance: " + DISTANCE_FORMAT.format(newBooking.distance()) + " km");
+        System.out.println("FARE: PHP " + CURRENCY_FORMAT.format(newBooking.fare()));
+        
+      
+        if (newBooking.distance() <= 1.0) {
+            System.out.println("Formula: PHP " + CURRENCY_FORMAT.format(INITIAL_KM_COST) + " (Fixed for 1 km or less)");
+        } else {
+            double additionalKm = newBooking.distance() - 1.0;
+            System.out.println("Formula: PHP " + CURRENCY_FORMAT.format(INITIAL_KM_COST) + " (1st km) + PHP " +
+                               CURRENCY_FORMAT.format(ADDITIONAL_KM_RATE) + "/km * " + DISTANCE_FORMAT.format(additionalKm) + " km (Additional)");
+        }
+        System.out.println("");
+    }
+
+    
+    private static void deleteBooking(Scanner scanner) {
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings available to delete.");
+            return;
+        }
+
+        
+        viewAllBookings();
+        System.out.println("\nDELETE A BOOKING");
+        System.out.print("Enter the Booking ID (#) to delete: ");
+
+        try {
+            int idToDelete = Integer.parseInt(scanner.nextLine());
+            boolean removed = bookings.removeIf(booking -> booking.id() == idToDelete);
+
+            if (removed) {
+                System.out.println("Successfully deleted Booking ID #" + idToDelete + ".");
+            } else {
+                System.out.println("Error: No booking found with ID #" + idToDelete + ".");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a numerical Booking ID.");
+        }
+    }
+
+   
+    private static void generateReport() {
+        System.out.println("GENERATE BOOKING REPORT");
+
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings to report on.");
+            return;
+        }
+
+        long totalBookings = bookings.size();
+        double totalDistance = 0;
+        double totalRevenue = 0;
+
+        for (Booking b : bookings) {
+            totalDistance += b.distance();
+            totalRevenue += b.fare();
+        }
+
+       
+        System.out.println("\n");
+        System.out.println("RIDE-HAILING SUMMARY REPORT");
+        System.out.println("");
+        System.out.printf("Total Number of Bookings: %d%n", totalBookings);
+        System.out.printf("Total Distance Traveled:  %s km%n", DISTANCE_FORMAT.format(totalDistance));
+        System.out.printf("Total Revenue Generated:  PHP %s%n", CURRENCY_FORMAT.format(totalRevenue));
+        System.out.println("");
+
+        
+        System.out.println("NOTE on Fare Calculation:");
+        System.out.printf("   PHP %s for the first 1.0 km.%n", CURRENCY_FORMAT.format(INITIAL_KM_COST));
+        System.out.printf("   PHP %s for each additional kilometer.%n", CURRENCY_FORMAT.format(ADDITIONAL_KM_RATE));
+    }
+}
